@@ -103,6 +103,12 @@
         <div class="left">
             <h2>Login</h2>
 
+            {% if error %}
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #f5c6cb;">
+                {{ error }}
+            </div>
+            {% endif %}
+
             <form method="post" action="/login">
                 <label>Username:</label>
                 <input type="text" name="username" required>

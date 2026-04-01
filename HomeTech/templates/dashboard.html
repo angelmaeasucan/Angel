@@ -94,10 +94,54 @@
 
     .activity h2 {
         margin-bottom: 15px;
+        color: #2c3e50;
     }
 
     .activity ul {
         list-style: none;
+        padding: 0;
+    }
+
+    .activity-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .activity-description {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .activity-meta {
+        font-size: 12px;
+        color: #666;
+        font-style: italic;
+    }
+
+    .activity-login {
+        border-left: 3px solid #3498db;
+        padding-left: 10px;
+    }
+
+    .activity-customer {
+        border-left: 3px solid #2ecc71;
+        padding-left: 10px;
+    }
+
+    .activity-product {
+        border-left: 3px solid #e74c3c;
+        padding-left: 10px;
+    }
         padding: 0;
     }
 
@@ -114,15 +158,15 @@
 <!-- Sidebar -->
 <div class="sidebar">
     <h2>Menu</h2>
-    <a href="#">Dashboard</a>
-    <a href="#">Customer</a>
-    <a href="#">Products</a>
-    <a href="#">Sales</a>
+    <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+    <a href="{{ url_for('customer_management') }}">Customer</a>
+    <a href="{{ url_for('products_management') }}">Products</a>
+    <a href="{{ url_for('sales_management') }}">Sales</a>
     <a href="#">Billing</a>
     <a href="#">Payments</a>
     <a href="#">Reports</a>
     <a href="#">Users</a>
-    <a href="#">Logout</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
 </div>
 
 <!-- Main Dashboard -->
@@ -136,22 +180,22 @@
     <div class="cards">
         <div class="card">
             <h3>Total Customers</h3>
-            <p>0</p>
+            <p>{{ total_customers }}</p>
         </div>
 
         <div class="card">
             <h3>Total Sales</h3>
-            <p>₱0</p>
+            <p>₱{{ total_sales }}</p>
         </div>
 
         <div class="card">
             <h3>Products</h3>
-            <p>0</p>
+            <p>{{ total_products }}</p>
         </div>
 
         <div class="card">
             <h3>Pending Payments</h3>
-            <p>0</p>
+            <p>₱{{ pending_payments }}</p>
         </div>
     </div>
 
@@ -159,10 +203,23 @@
     <div class="activity">
         <h2>Recent Activity</h2>
         <ul>
-            <li>New customer added</li>
-            <li>Payment received</li>
-            <li>Product updated</li>
-            <li>Invoice generated</li>
+            {% if recent_activities %}
+                {% for activity in recent_activities %}
+                <li class="activity-item activity-{{ activity.type }}">
+                    <div class="activity-content">
+                        <span class="activity-description">{{ activity.description }}</span>
+                        <span class="activity-meta">{{ activity.timestamp }} • {{ activity.user }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li class="activity-item">
+                    <div class="activity-content">
+                        <span class="activity-description">No recent activities</span>
+                        <span class="activity-meta">System</span>
+                    </div>
+                </li>
+            {% endif %}
         </ul>
     </div>
 
