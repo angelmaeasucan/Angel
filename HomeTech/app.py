@@ -3,21 +3,18 @@ from flask import Flask, render_template, request, redirect, url_for
 app = Flask(__name__)
 
 # CUSTOMERS DATABASE
-customers = []
+customers = [
+    {'id': 'I Love You', 'name': 'Jhonavie', 'contact': '0922 Ikaw nay bahala sa pito', 'address': 'Sa imong Heart', 'status': 'Active'},
+]
 
 # PRODUCTS DATABASE
 products = [
-    {'id': 1, 'name': 'Smart Thermostat', 'category': 'Home Automation', 'price': 199.99, 'stock': 25, 'status': 'active'},
-    {'id': 2, 'name': 'LED Light Bulb', 'category': 'Lighting', 'price': 29.99, 'stock': 150, 'status': 'active'},
-    {'id': 3, 'name': 'Security Camera', 'category': 'Security', 'price': 149.99, 'stock': 0, 'status': 'inactive'},
-    {'id': 4, 'name': 'Smart Door Lock', 'category': 'Security', 'price': 249.99, 'stock': 10, 'status': 'active'}
+    {'id': 'Gwapa', 'name': 'Wala pa', 'category': 'Secret', 'price': 150, 'stock': 'Mangita pa hatagi ko bi', 'status': 'Minyo na'},
 ]
 
 # SALES DATABASE
 sales = [
-    {'id': 1, 'product': 'Smart Thermostat', 'quantity': 2, 'total': 399.98, 'date': '2026-04-01', 'customer': 'ABC Corp'},
-    {'id': 2, 'product': 'LED Light Bulb', 'quantity': 20, 'total': 599.80, 'date': '2026-04-01', 'customer': 'Home Renovators'},
-    {'id': 3, 'product': 'Security Camera', 'quantity': 1, 'total': 149.99, 'date': '2026-03-31', 'customer': 'SecureSite'}
+    {'id': 'Way Halin gwapo', 'product': 'Wala pa', 'quantity': 1, 'total': 150, 'date': '2024-06-01', 'customer': 'Jhonavie'},
 ]
 
 # RECENT ACTIVITIES DATABASE
@@ -25,8 +22,8 @@ activities = []
 
 # USERS DATABASE (temporary)
 users = {
-    'admin': ['admin', 'admin'],
-    'cashier': ['cashier', 'cashier']
+    'admin': ['Admin', 'admin'],
+    'cashier': ['Cashier', 'cashier']
 }
 
 # ACTIVITY LOGGING FUNCTION
