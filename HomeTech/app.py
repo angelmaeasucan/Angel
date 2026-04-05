@@ -14,7 +14,12 @@ products = [
 
 # SALES DATABASE
 sales = [
-    {'id': 'Way Halin gwapo', 'product': 'Wala pa', 'quantity': 1, 'total': 150, 'date': '2024-06-01', 'customer': 'Jhonavie'},
+     {'id': 1, 'product': 'Wala pa', 'quantity': 1, 'total': 150, 'date': '2024-06-01', 'customer': 'Jhonavie'},
+]
+
+# BILLING DATABASE
+bills = [
+    {'id': 1, 'customer': 'Jhonavie', 'amount': 150, 'date': '2024-06-01', 'status': 'Paid', 'description': 'Sale of Wala pa'},
 ]
 
 # RECENT ACTIVITIES DATABASE
@@ -22,8 +27,8 @@ activities = []
 
 # USERS DATABASE (temporary)
 users = {
-    'admin': ['Admin', 'admin'],
-    'cashier': ['Cashier', 'cashier']
+    'admin': {'password': 'admin', 'role': 'admin'},
+    'cashier': {'password': 'cashier', 'role': 'cashier'}
 }
 
 # ACTIVITY LOGGING FUNCTION
@@ -54,60 +59,84 @@ def home():
 def login():
     error = None
     if request.method == "POST":
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username', '').strip().lower()
+        password = request.form.get('password', '').strip()
 
         # Check if username exists
         if username in users:
             # Check password
-            if password == users[username][0]:
-
+            if password == users[username]['password']:
                 # Log successful login
                 log_activity('login', f'User {username} logged in', username)
 
-                # Check role
-                if users[username][1] == 'admin':
+                # Check role and redirect accordingly
+                role = users[username]['role']
+                if role == 'admin':
                     return redirect(url_for('admin_dashboard'))
-                elif users[username][1] == 'cashier':
+                elif role == 'cashier':
                     return redirect(url_for('cashier_dashboard'))
-
-        error = "Invalid username or password!"
+            else:
+                error = "Invalid username or password!"
+        else:
+            error = "Invalid username or password!"
 
     return render_template('login.html', error=error)
 
 
 def get_dashboard_metrics():
     total_customers = len(customers)
-    total_sales = 0  # TODO: connect to real sales dataset
+    total_sales = sum(s['total'] for s in sales)  # Connected to real sales dataset
     total_products = len(products)  # Connected to products dataset
-    pending_payments = 0  # TODO: connect to real billing dataset
-    return total_customers, total_sales, total_products, pending_payments
+    total_products_sold = sum(s['quantity'] for s in sales)  # Total quantity of products sold
+    pending_payments = sum(b['amount'] for b in bills if b['status'] == 'Unpaid')  # Connected to real billing dataset
+
+    # Billing metrics
+    total_bills = len(bills)
+    paid_bills = len([b for b in bills if b['status'] == 'Paid'])
+    unpaid_bills = len([b for b in bills if b['status'] == 'Unpaid'])
+    total_revenue = sum(b['amount'] for b in bills if b['status'] == 'Paid')
+
+    return total_customers, total_sales, total_products, total_products_sold, pending_payments, total_bills, paid_bills, unpaid_bills, total_revenue
 
 
 # ADMIN DASHBOARD
 @app.route('/admin')
 def admin_dashboard():
-    total_customers, total_sales, total_products, pending_payments = get_dashboard_metrics()
+    total_customers, total_sales, total_products, total_products_sold, pending_payments, total_bills, paid_bills, unpaid_bills, total_revenue = get_dashboard_metrics()
     recent_activities = activities[:10]  # Show last 10 activities
+    recent_bills = bills[-5:]  # Show last 5 bills
     return render_template('dashboard.html',
                            total_customers=total_customers,
                            total_sales=total_sales,
                            total_products=total_products,
+                           total_products_sold=total_products_sold,
                            pending_payments=pending_payments,
-                           recent_activities=recent_activities)
+                           total_bills=total_bills,
+                           paid_bills=paid_bills,
+                           unpaid_bills=unpaid_bills,
+                           total_revenue=total_revenue,
+                           recent_activities=recent_activities,
+                           recent_bills=recent_bills)
 
 
 # CASHIER DASHBOARD
 @app.route('/cashier')
 def cashier_dashboard():
-    total_customers, total_sales, total_products, pending_payments = get_dashboard_metrics()
+    total_customers, total_sales, total_products, total_products_sold, pending_payments, total_bills, paid_bills, unpaid_bills, total_revenue = get_dashboard_metrics()
     recent_activities = activities[:10]  # Show last 10 activities
+    recent_bills = bills[-5:]  # Show last 5 bills
     return render_template('dashboard.html',
                            total_customers=total_customers,
                            total_sales=total_sales,
                            total_products=total_products,
+                           total_products_sold=total_products_sold,
                            pending_payments=pending_payments,
-                           recent_activities=recent_activities)
+                           total_bills=total_bills,
+                           paid_bills=paid_bills,
+                           unpaid_bills=unpaid_bills,
+                           total_revenue=total_revenue,
+                           recent_activities=recent_activities,
+                           recent_bills=recent_bills)
 
 
 @app.route('/customer_management', methods=['POST', 'GET'])
@@ -274,6 +303,63 @@ def delete_sale(sale_id):
     if sale:
         log_activity('sales', f'Sale deleted: {sale["product"]} (ID {sale_id})', 'cashier')
     return redirect(url_for('sales_management'))
+
+
+# BILLING MANAGEMENT
+@app.route('/billing', methods=['GET', 'POST'])
+def billing_management():
+    global bills
+    error = None
+    search_query = ''
+
+    if request.method == 'POST':
+        if 'add_bill' in request.form:
+            new_id = max([b['id'] for b in bills], default=0) + 1
+            customer = request.form.get('customer', '').strip()
+            amount = request.form.get('amount', '').strip()
+            date = request.form.get('date', '').strip()
+            status = request.form.get('status', 'Unpaid')
+            description = request.form.get('description', '').strip()
+
+            if not customer or not amount or not date:
+                error = 'Customer, Amount, and Date are required.'
+            else:
+                try:
+                    amount = float(amount)
+                    bills.append({'id': new_id, 'customer': customer, 'amount': amount, 'date': date, 'status': status, 'description': description})
+                    log_activity('billing', f'Bill created for {customer}: ${amount}', 'cashier')
+                    return redirect(url_for('billing_management'))
+                except ValueError:
+                    error = 'Amount must be numeric.'
+
+        elif 'search_bill' in request.form:
+            search_query = request.form.get('searchInput', '').strip().lower()
+
+    filtered_bills = bills
+    if search_query:
+        filtered_bills = [b for b in bills if search_query in b['customer'].lower() or search_query in b['description'].lower() or search_query in b['date']]
+
+    return render_template('billing.html', bills=filtered_bills, error=error, search_query=search_query)
+
+
+@app.route('/delete_bill/<int:bill_id>')
+def delete_bill(bill_id):
+    global bills
+    bill = next((b for b in bills if b['id'] == bill_id), None)
+    bills[:] = [b for b in bills if b['id'] != bill_id]
+    if bill:
+        log_activity('billing', f'Bill deleted for {bill["customer"]} (ID {bill_id})', 'cashier')
+    return redirect(url_for('billing_management'))
+
+
+@app.route('/update_bill_status/<int:bill_id>/<status>')
+def update_bill_status(bill_id, status):
+    global bills
+    bill = next((b for b in bills if b['id'] == bill_id), None)
+    if bill:
+        bill['status'] = status
+        log_activity('billing', f'Bill status updated to {status} for {bill["customer"]} (ID {bill_id})', 'cashier')
+    return redirect(url_for('billing_management'))
 
 
 @app.route('/delete_product/<int:product_id>')

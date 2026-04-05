@@ -16,10 +16,10 @@
 
         /* SIDEBAR */
         .sidebar {
-            width: 220px;
+            width: 290px;
             background: #2c3e50;
             color: white;
-            padding: 20px 0;
+            padding: 30.6px 12px;
         }
         .sidebar h2 { text-align: center; margin-bottom: 30px; }
         .sidebar ul { list-style: none; }
@@ -27,7 +27,7 @@
             display: block;
             color: white;
             text-decoration: none;
-            padding: 12px 20px;
+            padding: 12px 15px;
             margin: 5px 0;
             border-radius: 4px;
         }
@@ -138,8 +138,11 @@
             <h2>HomeTech</h2>
             <ul>
                 <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('customer_management') }}">Customer</a></li>
                 <li><a href="{{ url_for('products_management') }}" class="active">Products</a></li>
-                <li><a href="{{ url_for('customer_management') }}">Customers</a></li>
+                <li><a href="{{ url_for('sales_management') }}">Sales</a></li>
+                <li><a href="{{ url_for('billing_management') }}">Billing</a></li>
+
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </div>
@@ -236,14 +239,14 @@
                                 <td>{{ product.stock }}</td>
                                 <td><span class="status-badge status-{{ product.status }}">{{ product.status.title() }}</span></td>
                                 <td class="action-buttons">
-                                    <button class="action-btn edit-btn" onclick="editProduct({{ product.id }})">Edit</button>
-                                    <button class="action-btn delete-btn" onclick="deleteProduct({{ product.id }}, '{{ product.name }}')">Delete</button>
+                                    <a href="/edit_product/{{ product.id }}" class="action-btn edit-btn">Edit</a>
+                                    <button class="action-btn delete-btn" data-id="{{ product.id }}" data-name="{{ product.name }}" onclick="handleDelete(event)">Delete</button>
                                 </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                                <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
                                     No products found. Click "Add New Product" to get started.
                                 </td>
                             </tr>
@@ -269,13 +272,11 @@
             document.getElementById('productForm').style.display = 'block';
         }
 
-        // Edit product
-        function editProduct(productId) {
-            window.location.href = `/edit_product/${productId}`;
-        }
-
         // Delete product
-        function deleteProduct(productId, productName) {
+        function handleDelete(event) {
+            const button = event.target;
+            const productId = button.getAttribute('data-id');
+            const productName = button.getAttribute('data-name');
             if (confirm(`Are you sure you want to delete "${productName}"?`)) {
                 window.location.href = `/delete_product/${productId}`;
             }
@@ -291,20 +292,36 @@
             alert('Export functionality would be implemented here');
         }
 
-        // Show form if editing
-        {% if edit_product %}
+        // Initialize edit form if editing
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('formTitle').textContent = 'Edit Product';
-            document.getElementById('productFormData').action = `/edit_product/{{ edit_product.id }}`;
-            document.getElementById('productId').value = '{{ edit_product.id }}';
-            document.getElementById('productName').value = '{{ edit_product.name }}';
-            document.getElementById('category').value = '{{ edit_product.category }}';
-            document.getElementById('price').value = '{{ edit_product.price }}';
-            document.getElementById('stock').value = '{{ edit_product.stock }}';
-            document.getElementById('status').value = '{{ edit_product.status }}';
-            document.getElementById('productId').readOnly = true;
-            document.getElementById('productForm').style.display = 'block';
+            const editData = JSON.parse(document.getElementById('editProductData').textContent || '{}');
+            if (Object.keys(editData).length > 0) {
+                document.getElementById('formTitle').textContent = 'Edit Product';
+                document.getElementById('productFormData').action = `/edit_product/${editData.id}`;
+                document.getElementById('productId').value = editData.id;
+                document.getElementById('productName').value = editData.name;
+                document.getElementById('category').value = editData.category;
+                document.getElementById('price').value = editData.price;
+                document.getElementById('stock').value = editData.stock;
+                document.getElementById('status').value = editData.status;
+                document.getElementById('productId').readOnly = true;
+                document.getElementById('productForm').style.display = 'block';
+            }
         });
+    </script>
+
+    <script type="application/json" id="editProductData">
+        {% if edit_product %}
+        {
+            "id": "{{ edit_product.id }}",
+            "name": "{{ edit_product.name }}",
+            "category": "{{ edit_product.category }}",
+            "price": "{{ edit_product.price }}",
+            "stock": "{{ edit_product.stock }}",
+            "status": "{{ edit_product.status }}"
+        }
+        {% else %}
+        {}
         {% endif %}
     </script>
 </body>
