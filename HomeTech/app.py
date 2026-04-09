@@ -1,25 +1,39 @@
 from flask import Flask, render_template, request, redirect, url_for
+import json
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
 # CUSTOMERS DATABASE
 customers = [
-    {'id': 'I Love You', 'name': 'Jhonavie', 'contact': '0922 Ikaw nay bahala sa pito', 'address': 'Sa imong Heart', 'status': 'Active'},
+    {'id': '0101', 'name': 'Juan', 'contact': '09223456789', 'address': 'Tubigon'},
+    {'id': '0000', 'name': 'Jhonavie', 'contact': '09220987654', 'address': 'Clarin'},
+    {'id': '0001', 'name': 'Angel', 'contact': '09123456789', 'address': 'Dagohoy'},
+    {'id': '0002', 'name': 'Maria', 'contact': '09123452459', 'address': 'Danao'},
+    {'id': '0003', 'name': 'John', 'contact': '09123456789', 'address': 'Mactan'},
+    {'id': '0004', 'name': 'Jane', 'contact': '09123456789', 'address': 'Bantayan'},
+    {'id': '0005', 'name': 'Heart', 'contact': '09958840258', 'address': 'Nahud'},
 ]
 
 # PRODUCTS DATABASE
 products = [
-    {'id': 'Gwapa', 'code': 'PC001', 'name': 'Wala pa', 'category': 'Secret', 'price': 150, 'stock': 0, 'status': 'Minyo na'},
+    {'id': '1001', 'name': 'Laptop', 'category': 'Electronics', 'price': 45000, 'stock': 'Available', 'status': 'active'},
+    {'id': '1010', 'name': 'Television', 'category': 'Electronics', 'price': 32000, 'stock': 'Available', 'status': 'active'},
+    {'id': '1234', 'name': 'Refrigerator', 'category': 'Appliances', 'price': 23000, 'stock': 'Available', 'status': 'active'},
+    {'id': '1235', 'name': 'Washing Machine', 'category': 'Appliances', 'price': 18000, 'stock': 'Available', 'status': 'active'},
+    {'id': '1236', 'name': 'Microwave Oven', 'category': 'Appliances', 'price': 5000, 'stock': 'Not Available', 'status': 'active'},
+    {'id': '1237', 'name': 'Blender', 'category': 'Appliances', 'price': 2000, 'stock': 'Available', 'status': 'active'},
+    {'id': '1238', 'name': 'Toaster', 'category': 'Appliances', 'price': 1500, 'stock': 'Available', 'status': 'active'},
 ]
 
 # SALES DATABASE
 sales = [
-     {'id': 1, 'product': 'Wala pa', 'quantity': 1, 'total': 150, 'date': '2024-06-01', 'customer': 'Jhonavie'},
+     {'id': 1, 'product': 'Television', 'quantity': 1, 'total': 32000, 'date': '2024-06-01', 'customer': 'Jhonavie'},
 ]
 
 # BILLING DATABASE
 bills = [
-    {'id': 1, 'customer': 'Jhonavie', 'amount': 150, 'date': '2024-06-01', 'status': 'Paid', 'description': 'Sale of Wala pa'},
+    {'id': 1, 'customer_id': '0000', 'customer': 'Jhonavie', 'amount': 32000, 'date': '2024-06-01', 'status': 'Paid', 'description': 'Television purchase'},
 ]
 
 # RECENT ACTIVITIES DATABASE
@@ -34,7 +48,6 @@ users = {
 # ACTIVITY LOGGING FUNCTION
 def log_activity(activity_type, description, user="System"):
     global activities
-    from datetime import datetime
     activity = {
         'id': len(activities) + 1,
         'type': activity_type,
@@ -46,8 +59,6 @@ def log_activity(activity_type, description, user="System"):
     # Keep only last 20 activities
     if len(activities) > 20:
         activities = activities[:20]
-
-
 
 # HOME (LOGIN PAGE)
 @app.route('/')
@@ -185,6 +196,7 @@ def customer_management():
 
     return render_template('customer.html', customers=filtered_customers, error=error, search_query=search_query, form_data=form_data)
 
+
 @app.route('/delete_customer/<customer_id>')
 def delete_customer(customer_id):
     global customers
@@ -211,44 +223,36 @@ def products_management():
         print(f"POST data: {request.form}")
         if 'save_product' in request.form:
             product_id = request.form.get('productId', '').strip()
-            product_code = request.form.get('productCode', '').strip()
             product_name = request.form.get('productName', '').strip()
             category = request.form.get('category', '').strip()
             price = request.form.get('price', '').strip()
             stock = request.form.get('stock', '').strip()
             status = request.form.get('status', 'active')
 
-            if not product_id or not product_code or not product_name or not category or not price or not stock:
+            if not product_id or not product_name or not category or not price or not stock:
                 error = "All fields are required!"
             else:
                 try:
                     product_id = int(product_id)
                     price = float(price)
-                    stock = int(stock)
 
                     # Check if product already exists
                     existing = [p for p in products if p['id'] == product_id]
                     if existing:
                         error = "Product ID already exists!"
                     else:
-                        # Check if product code already exists
-                        existing_code = [p for p in products if p['code'] == product_code]
-                        if existing_code:
-                            error = "Product Code already exists!"
-                        else:
-                            products.append({
-                                'id': product_id,
-                                'code': product_code,
-                                'name': product_name,
-                                'category': category,
-                                'price': price,
-                                'stock': stock,
-                                'status': status
-                            })
-                            log_activity('product', f'New product added: {product_name} (ID: {product_id})', 'admin')
-                            return redirect(url_for('products_management'))
+                        products.append({
+                            'id': product_id,
+                            'name': product_name,
+                            'category': category,
+                            'price': price,
+                            'stock': stock,
+                            'status': status
+                        })
+                        log_activity('product', f'New product added: {product_name} (ID: {product_id})', 'admin')
+                        return redirect(url_for('products_management'))
                 except ValueError:
-                    error = "Invalid number format for ID, Price, or Stock!"
+                    error = "Invalid number format for ID or Price!"
 
         elif 'search_product' in request.form:
             search_query = request.form.get('searchInput', '').strip().lower()
@@ -259,9 +263,64 @@ def products_management():
     # Filter products based on search
     filtered_products = products
     if search_query:
-        filtered_products = [p for p in products if search_query in str(p['id']) or search_query in p.get('code', '') or search_query in p['name'].lower() or search_query in p['category'].lower()]
+        filtered_products = [p for p in products if search_query in str(p['id']) or search_query in p['name'].lower() or search_query in p['category'].lower()]
 
     return render_template('Products.html', products=filtered_products, error=error, search_query=search_query, form_data=form_data)
+
+
+@app.route('/delete_product/<product_id>')
+def delete_product(product_id):
+    global products
+    product_id = str(product_id)
+    # Find product name before deletion for logging
+    product = next((p for p in products if str(p['id']) == product_id), None)
+    product_name = product['name'] if product else 'Unknown'
+    
+    products[:] = [p for p in products if str(p['id']) != product_id]
+    log_activity('product', f'Product deleted: {product_name} (ID: {product_id})', 'admin')
+    return redirect(url_for('products_management'))
+
+
+@app.route('/edit_product/<product_id>', methods=['GET', 'POST'])
+def edit_product(product_id):
+    global products
+    product_id = str(product_id)
+    print(f"Edit product route called with product_id: {product_id}, method: {request.method}")
+    product = next((p for p in products if str(p['id']) == product_id), None)
+
+    if not product:
+        print(f"Product {product_id} not found")
+        return "Product not found", 404
+
+    if request.method == 'POST':
+        print(f"POST data for edit: {request.form}")
+        product_name = request.form.get('productName', '').strip()
+        category = request.form.get('category', '').strip()
+        price = request.form.get('price', '').strip()
+        stock = request.form.get('stock', '').strip()
+        status = request.form.get('status', 'active')
+
+        if not product_name or not category or not price or not stock:
+            error = "All fields are required!"
+            print(f"Validation error: {error}")
+            return render_template('Products.html', products=products, error=error, edit_product=product)
+
+        try:
+            product['name'] = product_name
+            product['category'] = category
+            product['price'] = float(price)
+            product['stock'] = stock
+            product['status'] = status
+            log_activity('product', f'Product updated: {product_name} (ID: {product_id})', 'admin')
+            print(f"Product {product_id} updated successfully")
+            return redirect(url_for('products_management'))
+        except ValueError as e:
+            error = "Invalid number format for Price!"
+            print(f"Value error: {e}")
+            return render_template('Products.html', products=products, error=error, edit_product=product)
+
+    print(f"Showing edit form for product {product_id}")
+    return render_template('Products.html', products=products, edit_product=product)
 
 
 # SALES MANAGEMENT
@@ -279,29 +338,88 @@ def sales_management():
             date = request.form.get('date', '').strip()
             quantity = request.form.get('quantity', '').strip()
             total = request.form.get('total', '').strip()
+            payment_type = request.form.get('payment_type', '').strip()
 
-            if not product or not customer or not date or not quantity or not total:
+            if not product or not customer or not date or not quantity or not total or not payment_type:
                 error = 'All fields are required.'
             else:
                 try:
                     quantity = int(quantity)
-                    total = float(total)
-                    sales.append({'id': new_id, 'product': product, 'quantity': quantity, 'total': total, 'date': date, 'customer': customer})
-                    log_activity('sales', f'Sale recorded: {product} ({quantity}) to {customer}', 'cashier')
-                    return redirect(url_for('sales_management'))
-                except ValueError:
-                    error = 'Quantity must be integer and total must be numeric.'
 
+                    matched_product = next((p for p in products if p['name'].lower() == product.lower()), None)
+                    if not matched_product:
+                        error = 'Selected product not found.'
+                    else:
+                        price = float(matched_product['price'])
+                        total_price = price * quantity
+                        sale_data = {
+                            'id': new_id,
+                            'product': matched_product['name'],
+                            'quantity': quantity,
+                            'total': total_price,
+                            'date': date,
+                            'customer': customer,
+                            'payment_type': payment_type
+                        }
+                        if payment_type == 'installment':
+                            down_payment = request.form.get('down_payment', '0').strip()
+                            installment_months = request.form.get('installment_months', '').strip()
+                            if not down_payment:
+                                error = 'Down payment is required for installment.'
+                            elif not installment_months:
+                                error = 'Please enter how many months the customer will pay.'
+                            else:
+                                down_payment = float(down_payment)
+                                installment_months = int(installment_months)
+                                if down_payment >= total_price:
+                                    error = 'Down payment cannot be equal to or greater than total amount.'
+                                elif installment_months < 1:
+                                    error = 'Installment months must be at least 1.'
+                                else:
+                                    monthly_payment = round((total_price - down_payment) / installment_months, 2)
+                                    sale_data.update({
+                                        'down_payment': down_payment,
+                                        'monthly_payment': monthly_payment,
+                                        'installment_terms': installment_months,
+                                        'remaining_balance': round(total_price - down_payment, 2)
+                                    })
+                                    # Create bill for down payment
+                                    bill_id = max([b['id'] for b in bills], default=0) + 1
+                                    bills.append({
+                                        'id': bill_id,
+                                        'customer': customer,
+                                        'amount': down_payment,
+                                        'date': date,
+                                        'status': 'Paid',
+                                        'description': f'Down payment for {matched_product["name"]} installment',
+                                        'type': 'Down Payment'
+                                    })
+                                    log_activity('billing', f'Down payment recorded: ₱{down_payment} for {customer}', 'cashier')
+                        elif payment_type == 'cash':
+                            # Create bill for full payment
+                            bill_id = max([b['id'] for b in bills], default=0) + 1
+                            bills.append({
+                                'id': bill_id,
+                                'customer': customer,
+                                'amount': total_price,
+                                'date': date,
+                                'status': 'Paid',
+                                'description': f'Full payment for {matched_product["name"]}',
+                                'type': 'Full Payment'
+                            })
+                            log_activity('billing', f'Full payment recorded: ₱{total_price} for {customer}', 'cashier')
+                        if not error:
+                            sales.append(sale_data)
+                            log_activity('sales', f'Sale recorded: {matched_product["name"]} ({quantity}) to {customer} - {payment_type}', 'cashier')
+                            return redirect(url_for('sales_management'))
+                except ValueError:
+                    error = 'Invalid number format for quantity or down payment.'
         elif 'search_sale' in request.form:
             search_query = request.form.get('searchInput', '').strip().lower()
-
     filtered_sales = sales
     if search_query:
         filtered_sales = [s for s in sales if search_query in s['product'].lower() or search_query in s['customer'].lower() or search_query in s['date']]
-
-    return render_template('Sales.html', sales=filtered_sales, error=error, search_query=search_query)
-
-
+    return render_template('Sales.html', sales=filtered_sales, error=error, search_query=search_query, products=products)
 @app.route('/delete_sale/<int:sale_id>')
 def delete_sale(sale_id):
     global sales
@@ -310,14 +428,20 @@ def delete_sale(sale_id):
     if sale:
         log_activity('sales', f'Sale deleted: {sale["product"]} (ID {sale_id})', 'cashier')
     return redirect(url_for('sales_management'))
-
-
 # BILLING MANAGEMENT
 @app.route('/billing', methods=['GET', 'POST'])
 def billing_management():
     global bills
     error = None
     search_query = ''
+
+    # Calculate billing summary
+    total_bills = len(bills)
+    paid_bills = len([b for b in bills if b['status'] == 'Paid'])
+    unpaid_bills = len([b for b in bills if b['status'] == 'Unpaid'])
+    pending_bills = len([b for b in bills if b['status'] == 'Pending'])
+    total_collected = sum(b['amount'] for b in bills if b['status'] == 'Paid')
+    outstanding_amount = sum(b['amount'] for b in bills if b['status'] != 'Paid')
 
     if request.method == 'POST':
         if 'add_bill' in request.form:
@@ -333,8 +457,16 @@ def billing_management():
             else:
                 try:
                     amount = float(amount)
-                    bills.append({'id': new_id, 'customer': customer, 'amount': amount, 'date': date, 'status': status, 'description': description})
-                    log_activity('billing', f'Bill created for {customer}: ${amount}', 'cashier')
+                    bills.append({
+                        'id': new_id,
+                        'customer': customer,
+                        'amount': amount,
+                        'date': date,
+                        'status': status,
+                        'description': description,
+                        'type': 'Manual'
+                    })
+                    log_activity('billing', f'Bill created for {customer}: ₱{amount}', 'cashier')
                     return redirect(url_for('billing_management'))
                 except ValueError:
                     error = 'Amount must be numeric.'
@@ -344,9 +476,21 @@ def billing_management():
 
     filtered_bills = bills
     if search_query:
-        filtered_bills = [b for b in bills if search_query in b['customer'].lower() or search_query in b['description'].lower() or search_query in b['date']]
+        filtered_bills = [b for b in bills if search_query in b['customer'].lower() 
+                          or search_query in b['description'].lower() 
+                          or search_query in b['date']]
 
-    return render_template('billing.html', bills=filtered_bills, error=error, search_query=search_query)
+    return render_template('billing.html',
+                          bills=filtered_bills,
+                          error=error,
+                          search_query=search_query,
+                          total_bills=total_bills,
+                          paid_bills=paid_bills,
+                          unpaid_bills=unpaid_bills,
+                          pending_bills=pending_bills,
+                          total_collected=total_collected,
+                          outstanding_amount=outstanding_amount,
+                          bills_json=json.dumps(filtered_bills))
 
 
 @app.route('/delete_bill/<int:bill_id>')
@@ -365,77 +509,55 @@ def update_bill_status(bill_id, status):
     bill = next((b for b in bills if b['id'] == bill_id), None)
     if bill:
         bill['status'] = status
-        log_activity('billing', f'Bill status updated to {status} for {bill["customer"]} (ID {bill_id})', 'cashier')
+        log_activity('billing', f'Bill status updated for {bill["customer"]} (ID {bill_id}) to {status}', 'cashier')
     return redirect(url_for('billing_management'))
 
 
-@app.route('/delete_product/<int:product_id>')
-def delete_product(product_id):
-    global products
-    # Find product name before deletion for logging
-    product = next((p for p in products if p['id'] == product_id), None)
-    product_name = product['name'] if product else 'Unknown'
-    
-    products[:] = [p for p in products if p['id'] != product_id]
-    log_activity('product', f'Product deleted: {product_name} (ID: {product_id})', 'admin')
-    return redirect(url_for('products_management'))
+@app.route('/generate_installment_invoices')
+def generate_installment_invoices():
+    global sales, bills
+    from datetime import datetime, timedelta
 
+    generated_count = 0
 
-@app.route('/edit_product/<int:product_id>', methods=['GET', 'POST'])
-def edit_product(product_id):
-    global products
-    print(f"Edit product route called with product_id: {product_id}, method: {request.method}")
-    product = next((p for p in products if p['id'] == product_id), None)
+    for sale in sales:
+        if sale.get('payment_type') == 'installment':
+            customer = sale['customer']
+            monthly_payment = sale.get('monthly_payment', 0)
+            installment_terms = sale.get('installment_terms', 12)
+            sale_date = datetime.strptime(sale['date'], '%Y-%m-%d')
 
-    if not product:
-        print(f"Product {product_id} not found")
-        return "Product not found", 404
+            # Check how many installment bills already exist for this sale
+            existing_installments = [b for b in bills if
+                                   b.get('type') == 'Installment' and
+                                   b['customer'] == customer and
+                                   f"Installment payment for {sale['product']}" in b['description']]
 
-    if request.method == 'POST':
-        print(f"POST data for edit: {request.form}")
-        product_code = request.form.get('productCode', '').strip()
-        product_name = request.form.get('productName', '').strip()
-        category = request.form.get('category', '').strip()
-        price = request.form.get('price', '').strip()
-        stock = request.form.get('stock', '').strip()
-        status = request.form.get('status', 'active')
+            # Generate remaining installment bills
+            for month in range(len(existing_installments) + 1, installment_terms + 1):
+                bill_date = sale_date + timedelta(days=30 * month)  # Approximate monthly
 
-        if not product_code or not product_name or not category or not price or not stock:
-            error = "All fields are required!"
-            print(f"Validation error: {error}")
-            return render_template('Products.html', products=products, error=error, edit_product=product)
+                bill_id = max([b['id'] for b in bills], default=0) + 1
+                bills.append({
+                    'id': bill_id,
+                    'customer': customer,
+                    'amount': monthly_payment,
+                    'date': bill_date.strftime('%Y-%m-%d'),
+                    'status': 'Unpaid',
+                    'description': f'Installment payment {month}/{installment_terms} for {sale["product"]}',
+                    'type': 'Installment',
+                    'sale_id': sale['id']
+                })
+                generated_count += 1
 
-        # Check if product code already exists for another product
-        existing_code = [p for p in products if p['code'] == product_code and p['id'] != product_id]
-        if existing_code:
-            error = "Product Code already exists!"
-            print(f"Code exists error: {error}")
-            return render_template('Products.html', products=products, error=error, edit_product=product)
-
-        try:
-            product['code'] = product_code
-            product['name'] = product_name
-            product['category'] = category
-            product['price'] = float(price)
-            product['stock'] = int(stock)
-            product['status'] = status
-            log_activity('product', f'Product updated: {product_name} (ID: {product_id})', 'admin')
-            print(f"Product {product_id} updated successfully")
-            return redirect(url_for('products_management'))
-        except ValueError as e:
-            error = "Invalid number format for Price or Stock!"
-            print(f"Value error: {e}")
-            return render_template('Products.html', products=products, error=error, edit_product=product)
-
-    print(f"Showing edit form for product {product_id}")
-    return render_template('Products.html', products=products, edit_product=product)
+    log_activity('billing', f'Generated {generated_count} installment invoices', 'cashier')
+    return redirect(url_for('billing_management'))
 
 
 # LOGOUT (optional pero useful)
 @app.route('/logout')
 def logout():
     return redirect(url_for('home'))
-
 
 
 # RUN APP
@@ -446,7 +568,3 @@ if __name__ == '__main__':
     log_activity('customer', 'Customer database initialized', 'System')
     app.run(debug=True)
 
-
-    
-
-    
