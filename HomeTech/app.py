@@ -9,7 +9,7 @@ customers = [
 
 # PRODUCTS DATABASE
 products = [
-    {'id': 'Gwapa', 'name': 'Wala pa', 'category': 'Secret', 'price': 150, 'stock': 'Mangita pa hatagi ko bi', 'status': 'Minyo na'},
+    {'id': 'Gwapa', 'code': 'PC001', 'name': 'Wala pa', 'category': 'Secret', 'price': 150, 'stock': 0, 'status': 'Minyo na'},
 ]
 
 # SALES DATABASE
@@ -211,13 +211,14 @@ def products_management():
         print(f"POST data: {request.form}")
         if 'save_product' in request.form:
             product_id = request.form.get('productId', '').strip()
+            product_code = request.form.get('productCode', '').strip()
             product_name = request.form.get('productName', '').strip()
             category = request.form.get('category', '').strip()
             price = request.form.get('price', '').strip()
             stock = request.form.get('stock', '').strip()
             status = request.form.get('status', 'active')
 
-            if not product_id or not product_name or not category or not price or not stock:
+            if not product_id or not product_code or not product_name or not category or not price or not stock:
                 error = "All fields are required!"
             else:
                 try:
@@ -230,16 +231,22 @@ def products_management():
                     if existing:
                         error = "Product ID already exists!"
                     else:
-                        products.append({
-                            'id': product_id,
-                            'name': product_name,
-                            'category': category,
-                            'price': price,
-                            'stock': stock,
-                            'status': status
-                        })
-                        log_activity('product', f'New product added: {product_name} (ID: {product_id})', 'admin')
-                        return redirect(url_for('products_management'))
+                        # Check if product code already exists
+                        existing_code = [p for p in products if p['code'] == product_code]
+                        if existing_code:
+                            error = "Product Code already exists!"
+                        else:
+                            products.append({
+                                'id': product_id,
+                                'code': product_code,
+                                'name': product_name,
+                                'category': category,
+                                'price': price,
+                                'stock': stock,
+                                'status': status
+                            })
+                            log_activity('product', f'New product added: {product_name} (ID: {product_id})', 'admin')
+                            return redirect(url_for('products_management'))
                 except ValueError:
                     error = "Invalid number format for ID, Price, or Stock!"
 
@@ -252,7 +259,7 @@ def products_management():
     # Filter products based on search
     filtered_products = products
     if search_query:
-        filtered_products = [p for p in products if search_query in str(p['id']) or search_query in p['name'].lower() or search_query in p['category'].lower()]
+        filtered_products = [p for p in products if search_query in str(p['id']) or search_query in p.get('code', '') or search_query in p['name'].lower() or search_query in p['category'].lower()]
 
     return render_template('Products.html', products=filtered_products, error=error, search_query=search_query, form_data=form_data)
 
@@ -386,18 +393,27 @@ def edit_product(product_id):
 
     if request.method == 'POST':
         print(f"POST data for edit: {request.form}")
+        product_code = request.form.get('productCode', '').strip()
         product_name = request.form.get('productName', '').strip()
         category = request.form.get('category', '').strip()
         price = request.form.get('price', '').strip()
         stock = request.form.get('stock', '').strip()
         status = request.form.get('status', 'active')
 
-        if not product_name or not category or not price or not stock:
+        if not product_code or not product_name or not category or not price or not stock:
             error = "All fields are required!"
             print(f"Validation error: {error}")
             return render_template('Products.html', products=products, error=error, edit_product=product)
 
+        # Check if product code already exists for another product
+        existing_code = [p for p in products if p['code'] == product_code and p['id'] != product_id]
+        if existing_code:
+            error = "Product Code already exists!"
+            print(f"Code exists error: {error}")
+            return render_template('Products.html', products=products, error=error, edit_product=product)
+
         try:
+            product['code'] = product_code
             product['name'] = product_name
             product['category'] = category
             product['price'] = float(price)

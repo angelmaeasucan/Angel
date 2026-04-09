@@ -156,7 +156,7 @@
 
             <div class="action-bar">
                 <button class="btn btn-success" onclick="showAddForm()">Add New Product</button>
-                <button class="btn btn-primary" onclick="exportProducts()">Export Products</button>
+                <button class="btn btn-primary" onclick="UpdateProductDetails()">Update Product Details</button>
             </div>
 
             <!-- Add/Edit Product Form -->
@@ -164,9 +164,14 @@
                 <div class="form-container">
                     <h3 id="formTitle">Add New Product</h3>
                     <form id="productFormData" method="POST" action="/products">
+                        <input type="hidden" name="save_product" value="1">
                         <div class="form-group">
                             <label for="productId">Product ID:</label>
                             <input type="number" id="productId" name="productId" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="productCode">Product Code:</label>
+                            <input type="text" id="productCode" name="productCode" required>
                         </div>
                         <div class="form-group">
                             <label for="productName">Product Name:</label>
@@ -192,7 +197,7 @@
                             </select>
                         </div>
                         <div class="form-actions">
-                            <button type="submit" name="save_product" class="btn btn-success">Save Product</button>
+                            <button type="submit" class="btn btn-success">Save Product</button>
                             <button type="button" onclick="hideForm()" class="btn btn-danger">Cancel</button>
                         </div>
                     </form>
@@ -220,6 +225,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Product Code</th>
                             <th>Product Name</th>
                             <th>Category</th>
                             <th>Price</th>
@@ -233,6 +239,7 @@
                             {% for product in products %}
                             <tr>
                                 <td>{{ product.id }}</td>
+                                <td>{{ product.code }}</td>
                                 <td>{{ product.name }}</td>
                                 <td>{{ product.category }}</td>
                                 <td>${{ "%.2f" % product.price }}</td>
@@ -246,7 +253,7 @@
                             {% endfor %}
                         {% else %}
                             <tr>
-                                <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
+                                <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
                                     No products found. Click "Add New Product" to get started.
                                 </td>
                             </tr>
@@ -263,6 +270,7 @@
             document.getElementById('formTitle').textContent = 'Add New Product';
             document.getElementById('productFormData').action = '/products';
             document.getElementById('productId').value = '';
+            document.getElementById('productCode').value = '';
             document.getElementById('productName').value = '';
             document.getElementById('category').value = '';
             document.getElementById('price').value = '';
@@ -270,6 +278,39 @@
             document.getElementById('status').value = 'active';
             document.getElementById('productId').readOnly = false;
             document.getElementById('productForm').style.display = 'block';
+        }
+
+        // Update new product
+        function UpdateNewProduct() {
+            document.getElementById('productFormData').submit();
+        }
+
+        // Update product details
+        function UpdateProductDetails() {
+            // Add validation or additional code here if needed
+            const productId = document.getElementById('productId').value;
+            const productCode = document.getElementById('productCode').value;
+            const productName = document.getElementById('productName').value;
+            const category = document.getElementById('category').value;
+            const price = document.getElementById('price').value;
+            const stock = document.getElementById('stock').value;
+
+            if (!productId.trim() || !productCode.trim() || !productName.trim() || !category.trim() || !price.trim() || !stock.trim()) {
+                alert('All fields are required.');
+                return;
+            }
+
+            if (isNaN(price) || parseFloat(price) <= 0) {
+                alert('Price must be a positive number.');
+                return;
+            }
+
+            if (isNaN(stock) || parseInt(stock) < 0) {
+                alert('Stock must be a non-negative integer.');
+                return;
+            }
+
+            document.getElementById('productFormData').submit();
         }
 
         // Delete product
@@ -299,6 +340,7 @@
                 document.getElementById('formTitle').textContent = 'Edit Product';
                 document.getElementById('productFormData').action = `/edit_product/${editData.id}`;
                 document.getElementById('productId').value = editData.id;
+                document.getElementById('productCode').value = editData.code || '';
                 document.getElementById('productName').value = editData.name;
                 document.getElementById('category').value = editData.category;
                 document.getElementById('price').value = editData.price;
@@ -311,9 +353,11 @@
     </script>
 
     <script type="application/json" id="editProductData">
+
         {% if edit_product %}
         {
             "id": "{{ edit_product.id }}",
+            "code": "{{ edit_product.code }}",
             "name": "{{ edit_product.name }}",
             "category": "{{ edit_product.category }}",
             "price": "{{ edit_product.price }}",
